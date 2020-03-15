@@ -5,4 +5,6 @@ const foo = async () => {
 
 foo();
 
-console.log('Niecee eeee-- >')
+console.log('Neiecee elle-- >')
+console.log('Hedid')
+console.log('Kalilog')

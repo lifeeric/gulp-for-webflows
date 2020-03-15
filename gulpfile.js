@@ -1,16 +1,20 @@
 const { src, watch, dest, series } = require('gulp');
 
+// Webpack Config
+const webpack   = require('webpack');
+const webConfig = require('./config/webpack.config.js');
+
 // Importing Gulp Plugins.
 const sass      = require('gulp-sass');
 const uglifycss = require('gulp-uglifycss');
 const rename    = require("gulp-rename");
-const terser    = require('gulp-terser');
 const sync      = require('browser-sync').create();
-const babel     = require('gulp-babel');
-const plumber   = require('gulp-plumber');
-const concat    = require('gulp-concat');
 
-// for SCSS to CSS
+
+
+
+/* ***            Scripting       *****/
+// For Scss to CSS
 const scssToCss = (cb) => {
     // where is file
   return src('./scss/*.scss')
@@ -41,31 +45,23 @@ const uglifyCss = () => {
 }
 
 
-// babel
+// For weback
 
-const transfiler = (cb) => {
-  return src('./js/*.js')
-  .pipe(plumber())          // error handler
-  .pipe(concat('main.js')) // concat the files
-  .pipe(babel({
-    "presets": ["@babel/env"]
-  }))            // babel
-  .pipe(terser())         // ugliy
-  .pipe(rename('main.min.js')) // file rename
-  .pipe(dest('./dist/'))      // outup
-  .pipe(sync.stream()         ) // reload the browser
+const webpackAssests = (cb) => {
+  return new Promise((resolve, reject) => {
+    webpack(webConfig, (err, stats) => {
+      if ( err ) {
+        return reject(err)
+      }
+      if( stats.hasErrors() ) {
+        return reject(new Error(stats.compilation.errors.join('\n')))
+      }
+      resolve();
+    })
+  })
 }
 
-
-// for js to minified
-
-// const js = (cb) => {
-//     return src('./js/main.js')
-//     .pipe(rename('main.min.js'))
-//     .pipe(terser())
-//     .pipe(dest('./dist/'))
-// }
-
+// Watching & server
 const watchDir = (cb) => {
     sync.init({
         server: {
@@ -73,9 +69,11 @@ const watchDir = (cb) => {
         }
     });
 
-    watch('./scss/*.scss', scssToCss)
-    watch('./js/*.js', transfiler)
+    watch('./scss/*.scss', scssToCss);
+    watch('./js/*.js', webpackAssests).on('change', sync.reload);
+    // watch('./js/*.js', transfiler)
     watch('./dist/*.html').on('change', sync.reload);
 }
 
 exports.default = watchDir;
+exports.build = webpackAssests;
